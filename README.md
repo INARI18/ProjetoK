@@ -1,6 +1,6 @@
 # ProjetoK - Sistema Cliente-Servidor com Análise de Performance
 
-Sistema completo de testes de carga cliente-servidor com protocolo PING/PONG, utiliza as linguagens Python e Go, e possui análise detalhada de performance e execução em ambientes locais, Docker e Kubernetes.
+Sistema completo de testes de carga cliente-servidor com protocolo PING/PONG, utiliza as linguagens Python e Go, possui análise detalhada de performance e execução em ambientes locais, Docker e Kubernetes.
 
 ## 🚀 Execução Rápida
 
@@ -26,12 +26,11 @@ ProjetoK/
 ├── resultados/                # Outputs organizados
 │   ├── csv/                   # Dados em CSV
 │   ├── graficos/              # Gráficos PNG
-│   └── relatorios/            # Relatórios consolidados
+│   └── relatorios/            # Relatórios gerados 
 ├── config/                    # Configurações
 │   ├── docker/                # Dockerfile
 │   └── kubernetes/            # Manifests K8s
 ├── scripts/                   # Scripts de execução
-├── docs/                      # Documentação completa
 └── requirements.txt           # Dependências Python
 ```
 
@@ -63,12 +62,8 @@ ProjetoK/
 - `analise_performance_1000_mensagens.png`
 - `analise_performance_10000_mensagens.png`
 
-### Gráfico Consolidado
+### Gráfico de Performance Geral
 - `analise_performance.png` (4 visualizações em 1)
-
-## 📖 Documentação Completa
-
-Para informações detalhadas sobre arquitetura, configuração e uso:
 
 ## 🔧 Requisitos Mínimos
 
@@ -89,4 +84,4 @@ Os testes geram automaticamente:
 
 ---
 
-**Desenvolvido para análise acadêmica de performance cliente-servidor distribuído.**
+**Projeto desenvolvido para a cadeira Rede de Computadores.**
