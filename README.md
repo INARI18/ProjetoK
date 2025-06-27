@@ -87,18 +87,6 @@ Os testes geram automaticamente:
 - Métricas de escalabilidade
 - Estatísticas com detecção de outliers
 
-✅ **Atributos Implementados:**
-- Protocolo definido e implementado (PING/PONG)
-- Parâmetro configurável de mensagens
-- Threading no servidor (1 thread por cliente)
-- Registro detalhado em CSV
-- Geração de gráficos comparativos
-- Duas linguagens (Python + Go)
-- Script de execução automatizada
-- 3000 execuções conforme especificação
-- Estatísticas avançadas (máx, mín, média, mediana, desvio padrão)
-- Técnicas estatísticas (z-score) para remoção de outliers
-
 ---
 
 **Desenvolvido para análise acadêmica de performance cliente-servidor distribuído.**
