@@ -1,0 +1,17 @@
+Metrica,Valor
+Total_de_Testes_Executados,150
+Tempo_Medio_Geral_s,0.808
+Throughput_Medio_Geral_req_s,1571.1
+Melhor_Tempo_s,0.113
+Melhor_Throughput_req_s,6439.41
+Config_Melhor_Tempo_Servidores,4
+Config_Melhor_Tempo_Clientes,10
+Config_Melhor_Tempo_Mensagens,1
+Config_Melhor_Tempo_Linguagem,Go
+Config_Melhor_Throughput_Servidores,4
+Config_Melhor_Throughput_Clientes,100
+Config_Melhor_Throughput_Mensagens,100
+Config_Melhor_Throughput_Linguagem,Python
+Taxa_Erro_Geral_Percent,0.0
+Total_Sucessos,8250
+Total_Erros,0

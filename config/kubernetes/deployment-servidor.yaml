@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servidor-deployment
+spec:
+  replicas: 2  # aumente para 4, 6, 8 ou 10 conforme o teste
+  selector:
+    matchLabels:
+      app: servidor
+  template:
+    metadata:
+      labels:
+        app: servidor
+    spec:
+      containers:
+        - name: servidor
+          image: bia18/projetok:latest
+          command: ["python", "src/servidor/servidor.py", "--porta", "8000"]
+          ports:
+            - containerPort: 8000
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
