@@ -25,6 +25,7 @@ PROJECT_ROOT = SCRIPT_DIR.parent.parent
 SERVIDOR_DIR = PROJECT_ROOT / "src" / "servidor (local)"
 CLIENTE_DIR = PROJECT_ROOT / "src" / "cliente (local)"
 RESULTADOS_DIR = PROJECT_ROOT / "resultados"
+RELATORIOS_DIR = RESULTADOS_DIR / "relatorios"
 
 class ExecutorTeste:
     def __init__(self, linguagem="go"):
@@ -346,8 +347,9 @@ class ExecutorTeste:
     def _salvar_resultados_parciais(self):
         """Salvar resultados parciais em arquivo JSON"""
         RESULTADOS_DIR.mkdir(exist_ok=True)
+        RELATORIOS_DIR.mkdir(exist_ok=True)
         
-        arquivo_parcial = RESULTADOS_DIR / f"resultados_{self.linguagem}_parciais.json"
+        arquivo_parcial = RELATORIOS_DIR / f"resultados_{self.linguagem}_parciais.json"
         
         with open(arquivo_parcial, 'w', encoding='utf-8') as f:
             json.dump(self.resultados, f, indent=2, ensure_ascii=False)
@@ -357,9 +359,10 @@ class ExecutorTeste:
     def _salvar_resultados_finais(self):
         """Salvar resultados finais em arquivo JSON"""
         RESULTADOS_DIR.mkdir(exist_ok=True)
+        RELATORIOS_DIR.mkdir(exist_ok=True)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        arquivo_final = RESULTADOS_DIR / f"resultados_{self.linguagem}_k8s_{timestamp}.json"
+        arquivo_final = RELATORIOS_DIR / f"resultados_{self.linguagem}_k8s_{timestamp}.json"
         
         # Adicionar metadados aos resultados
         dados_finais = {

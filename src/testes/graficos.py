@@ -24,17 +24,20 @@ SCRIPT_DIR = Path(__file__).parent.absolute()
 PROJECT_ROOT = SCRIPT_DIR.parent.parent  # src/testes -> src -> ProjetoK
 RESULTADOS_DIR = PROJECT_ROOT / "resultados"
 GRAFICOS_DIR = RESULTADOS_DIR / "graficos"
+RELATORIOS_DIR = RESULTADOS_DIR / "relatorios"
 
 class GeradorGraficos:
     def __init__(self):
         # Criar diretórios se não existirem
         RESULTADOS_DIR.mkdir(exist_ok=True)
         GRAFICOS_DIR.mkdir(exist_ok=True)
+        RELATORIOS_DIR.mkdir(exist_ok=True)
         
         self.df_dados = None  # DataFrame principal com todos os dados
         
         print(f"📁 Diretório de resultados: {RESULTADOS_DIR}")
         print(f"📁 Diretório de gráficos: {GRAFICOS_DIR}")
+        print(f"📁 Diretório de relatórios: {RELATORIOS_DIR}")
         
         self._carregar_dados_csv()
     
@@ -42,7 +45,7 @@ class GeradorGraficos:
         """Carregar dados do relatório estatístico CSV"""
         print("📂 Carregando dados do relatório estatístico...")
         
-        csv_file = RESULTADOS_DIR / "relatorio_estatistico.csv"
+        csv_file = RELATORIOS_DIR / "relatorio_estatistico.csv"
         
         if csv_file.exists():
             try:
@@ -126,7 +129,7 @@ class GeradorGraficos:
         dados_python = []
         
         # Procurar arquivos de resultados Go
-        arquivos_go = glob.glob(str(RESULTADOS_DIR / "resultados_go*.json"))
+        arquivos_go = glob.glob(str(RELATORIOS_DIR / "resultados_go*.json"))
         for arquivo in arquivos_go:
             try:
                 with open(arquivo, 'r', encoding='utf-8') as f:
@@ -140,7 +143,7 @@ class GeradorGraficos:
                 print(f"❌ Erro ao carregar {arquivo}: {e}")
         
         # Procurar arquivos de resultados Python
-        arquivos_python = glob.glob(str(RESULTADOS_DIR / "resultados_python*.json"))
+        arquivos_python = glob.glob(str(RELATORIOS_DIR / "resultados_python*.json"))
         for arquivo in arquivos_python:
             try:
                 with open(arquivo, 'r', encoding='utf-8') as f:
@@ -195,7 +198,7 @@ class GeradorGraficos:
     def _salvar_csv(self):
         """Salvar dados consolidados em CSV"""
         if self.df_dados is not None and len(self.df_dados) > 0:
-            csv_file = RESULTADOS_DIR / "relatorio_estatistico.csv"
+            csv_file = RELATORIOS_DIR / "relatorio_estatistico.csv"
             self.df_dados.to_csv(csv_file, index=False, encoding='utf-8')
             print(f"✅ Relatório CSV salvo: {csv_file}")
     
@@ -418,6 +421,84 @@ class GeradorGraficos:
         
         return arquivo_salvo
 
+    def gerar_relatorio_resumo(self):
+        """Gera um relatório resumido em formato de texto"""
+        if self.df_dados is None or len(self.df_dados) == 0:
+            print("⚠️  Nenhum dado disponível para gerar relatório resumo")
+            return
+            
+        df_go = self._filtrar_dados('Go')
+        df_python = self._filtrar_dados('Python')
+        
+        if len(df_go) == 0 or len(df_python) == 0:
+            print("⚠️  Dados insuficientes para relatório resumo")
+            return
+        
+        # Calcular estatísticas
+        data_atual = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        
+        # Estatísticas Go
+        total_execucoes_go = len(df_go)
+        throughput_medio_go = df_go['throughput'].mean()
+        throughput_max_go = df_go['throughput'].max()
+        throughput_min_go = df_go['throughput'].min()
+        latencia_media_go = df_go['latencia_media'].mean()
+        latencia_max_go = df_go['latencia_media'].max()
+        latencia_min_go = df_go['latencia_media'].min()
+        
+        # Estatísticas Python
+        total_execucoes_python = len(df_python)
+        throughput_medio_python = df_python['throughput'].mean()
+        throughput_max_python = df_python['throughput'].max()
+        throughput_min_python = df_python['throughput'].min()
+        latencia_media_python = df_python['latencia_media'].mean()
+        latencia_max_python = df_python['latencia_media'].max()
+        latencia_min_python = df_python['latencia_media'].min()
+        
+        # Comparativo
+        diff_throughput = (throughput_medio_go / throughput_medio_python) * 100 - 100
+        diff_latencia = (latencia_media_python / latencia_media_go) * 100 - 100
+        
+        # Gerar conteúdo do relatório
+        conteudo = f"""================================================================================
+RESUMO EXECUTIVO - PROJETO K
+================================================================================
+Data de geração: {data_atual}
+
+LINGUAGEM GO
+----------------------------------------
+Total de execuções: {total_execucoes_go}
+Throughput médio: {throughput_medio_go:.2f} msg/s
+Throughput máximo: {throughput_max_go:.2f} msg/s
+Throughput mínimo: {throughput_min_go:.2f} msg/s
+Latência média: {latencia_media_go:.2f} ms
+Latência máxima: {latencia_max_go:.2f} ms
+Latência mínima: {latencia_min_go:.2f} ms
+
+LINGUAGEM PYTHON
+----------------------------------------
+Total de execuções: {total_execucoes_python}
+Throughput médio: {throughput_medio_python:.2f} msg/s
+Throughput máximo: {throughput_max_python:.2f} msg/s
+Throughput mínimo: {throughput_min_python:.2f} msg/s
+Latência média: {latencia_media_python:.2f} ms
+Latência máxima: {latencia_max_python:.2f} ms
+Latência mínima: {latencia_min_python:.2f} ms
+
+COMPARATIVO
+----------------------------------------
+Diferença de throughput (Go vs Python): {diff_throughput:.2f}%
+Diferença de latência (Python vs Go): {diff_latencia:.2f}%"""
+        
+        # Salvar arquivo
+        arquivo_resumo = RELATORIOS_DIR / "relatorio_resumo.txt"
+        with open(arquivo_resumo, 'w', encoding='utf-8') as f:
+            f.write(conteudo)
+        
+        print(f"✅ Relatório resumo salvo: {arquivo_resumo}")
+        return arquivo_resumo
+
+
 def main():
     """Função principal"""
     # Mostrar quanto tempo durou o processamento
@@ -431,12 +512,17 @@ def main():
         print("\n🎯 Gerando Relatório Final Completo...")
         gerador.gerar_relatorio_final_completo()
         
+        print("\n🎯 Gerando Relatório Resumo...")
+        gerador.gerar_relatorio_resumo()
+        
         print("\n" + "="*60)
-        print(f"✅ Relatório final gerado com sucesso! ({time.time() - start_time:.1f} segundos)")
-        print(f"📁 Arquivo salvo em: {GRAFICOS_DIR}")
-        print("\n🎯 ARQUIVO GERADO:")
-        print("   📋 relatorio_final_completo.png")
-        print("\n💡 Use este arquivo para apresentações e relatórios!")
+        print(f"✅ Relatórios gerados com sucesso! ({time.time() - start_time:.1f} segundos)")
+        print(f"📁 Gráficos salvos em: {GRAFICOS_DIR}")
+        print(f"📁 Relatórios salvos em: {RELATORIOS_DIR}")
+        print("\n🎯 ARQUIVOS GERADOS:")
+        print("   📋 relatorio_final_completo.png (gráfico)")
+        print("   📋 relatorio_resumo.txt (texto)")
+        print("\n💡 Use estes arquivos para apresentações e relatórios!")
         print("="*60)
         
     except Exception as e:
