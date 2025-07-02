@@ -37,7 +37,7 @@ Se você tem menos recursos, pode editar os deployments em:
 
 Reduza os valores de `requests` e `limits` para adequar ao seu hardware.
 
-## �🛠️ Pré-requisitos
+## 🛠️ Pré-Requisitos
 
 - **Docker Desktop** (https://www.docker.com/products/docker-desktop)
 - **Python 3.8+** com: `pip install matplotlib pandas seaborn`
