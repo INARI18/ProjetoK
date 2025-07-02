@@ -40,9 +40,9 @@ def conectar(host, porta, num_mensagens, cliente_id):
                 
             response = json.loads(response_buffer.decode('utf-8'))
             
-            # Pequena pausa entre mensagens para evitar sobrecarga
+            # Pausa mínima entre mensagens (necessária para estabilidade do teste)
             if i < num_mensagens:
-                time.sleep(0.01)
+                time.sleep(0.005) 
         
         cliente.close()
     except Exception as e:

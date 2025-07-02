@@ -46,7 +46,7 @@ logs/
 
 # Resultados temporários
 resultados/graficos/*.png
-resultados/csv/*.csv
+resultados/relatorios/*.csv
 resultados/relatorios/*.txt
 
 # Go binaries

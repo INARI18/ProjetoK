@@ -82,9 +82,9 @@ func conectar(host string, porta int, numMensagens int, clienteID string) error 
 			return err
 		}
 
-		// Pequena pausa entre mensagens para evitar sobrecarga
+		// Pausa mínima entre mensagens (necessária para estabilidade do teste)
 		if i < numMensagens {
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(5 * time.Millisecond)
 		}
 	}
 

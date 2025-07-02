@@ -3,32 +3,7 @@ import argparse
 import threading
 import json
 import time
-import csv
-import os
 from datetime import datetime
-
-# Lock para acesso seguro ao arquivo CSV
-csv_lock = threading.Lock()
-
-def registrar_requisicao(client_id, sequence, timestamp_req, timestamp_resp, status, porta):
-    """Registra a requisição no arquivo CSV"""
-    with csv_lock:
-        arquivo_csv = f"requests_porta_{porta}.csv"
-        arquivo_existe = os.path.exists(arquivo_csv)
-        
-        with open(arquivo_csv, 'a', newline='', encoding='utf-8') as f:
-            writer = csv.writer(f)
-            if not arquivo_existe:
-                writer.writerow([
-                    'timestamp_request', 'timestamp_response', 'client_id', 
-                    'sequence', 'response_time_ms', 'status', 'server_port'
-                ])
-            
-            response_time = timestamp_resp - timestamp_req
-            writer.writerow([
-                timestamp_req, timestamp_resp, client_id, sequence, 
-                response_time, status, porta
-            ])
 
 def lidar_com_cliente(conn, addr, porta_servidor):
     try:
@@ -73,16 +48,6 @@ def lidar_com_cliente(conn, addr, porta_servidor):
                         "message": f"Processado: {message.get('data', '')}"
                     }
                 
-                # Registrar no CSV
-                registrar_requisicao(
-                    message.get('client_id', 'unknown'),
-                    message.get('sequence', 0),
-                    message.get('timestamp', timestamp_recebido),
-                    response['timestamp'],
-                    'success',
-                    porta_servidor
-                )
-                
             except json.JSONDecodeError:
                 response = {
                     "type": "response",
@@ -90,11 +55,6 @@ def lidar_com_cliente(conn, addr, porta_servidor):
                     "timestamp": int(time.time() * 1000),
                     "message": "Erro ao decodificar mensagem"
                 }
-                
-                registrar_requisicao(
-                    'unknown', 0, timestamp_recebido, 
-                    response['timestamp'], 'error', porta_servidor
-                )
             
             # Enviar resposta
             response_bytes = json.dumps(response).encode('utf-8')
@@ -104,12 +64,7 @@ def lidar_com_cliente(conn, addr, porta_servidor):
             conn.sendall(response_bytes)
             
     except Exception as e:
-        # Registrar erro de conexão
-        timestamp_erro = int(time.time() * 1000)
-        registrar_requisicao(
-            'unknown', 0, timestamp_erro, timestamp_erro, 
-            f'connection_error: {str(e)}', porta_servidor
-        )
+        print(f"Erro na conexão: {e}")
     finally:
         conn.close()
 
@@ -124,7 +79,7 @@ def iniciar_servidor(porta):
     try:
         while True:
             conn, addr = servidor.accept()
-            # Uma thread por cliente conforme requisito
+            # Uma thread por cliente
             thread = threading.Thread(target=lidar_com_cliente, args=(conn, addr, porta))
             thread.daemon = True
             thread.start()

@@ -1,12 +1,27 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: servidor-service
+  name: servidor-go-service
 spec:
   selector:
-    app: servidor
+    app: servidor-go
   ports:
     - protocol: TCP
       port: 8000
       targetPort: 8000
-  type: ClusterIP
+      nodePort: 30001
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: servidor-python-service
+spec:
+  selector:
+    app: servidor-python
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30002
+  type: NodePort

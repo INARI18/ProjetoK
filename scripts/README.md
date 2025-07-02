@@ -1,47 +1,72 @@
-# Scripts de Execução - ProjetoK
+# Scripts - ProjetoK
 
-Scripts otimizados para execução automática dos testes em diferentes sistemas operacionais.
+Scripts essenciais para execução completa dos testes e análises.
 
-## Scripts Disponíveis
+## 📋 Scripts Disponíveis (apenas 4)
 
-- **`executar_windows.bat`** - Script para Windows (PowerShell/CMD)
-- **`executar_linux.sh`** - Script para Linux/macOS (Bash)
+### 🚀 **Execução de Testes**
+- **`executar_testes_go.bat`** - Executa testes completos com servidores Go
+- **`executar_testes_python.bat`** - Executa testes completos com servidores Python
+- **`gerar_graficos.bat`** - Gera gráficos comparativos dos resultados
 
-## Recursos dos Scripts
+### � **Manutenção (apenas para você)**
+- **`atualizar_imagens.bat`** - Atualiza as imagens Docker Hub (quando modificar código)
 
-### Funcionalidades Comuns
-- ✅ Detecção automática de ambiente
-- ✅ Instalação de dependências
-- ✅ Compilação do cliente Go
-- ✅ Execução dos testes locais
-- ✅ Geração de relatórios
-- ✅ Limpeza de processos
+## 🎯 Fluxo Simplificado
 
-### Funcionalidades Avançadas
-- 🔄 Verificação de pré-requisitos
-- 📊 Menu interativo de opções
-- 🐳 Suporte a Docker (opcional)
-- ☸️ Suporte a Kubernetes (opcional)
-- 📝 Logs detalhados
-- 🎨 Output colorido
-
-## Execução
-
-### Windows
-```batch
-scripts\executar_windows.bat
-```
-
-### Linux/macOS
+### Para Executar Testes (usuários normais):
 ```bash
-chmod +x scripts/executar_linux.sh
-./scripts/executar_linux.sh
+# Executar testes Go
+scripts\executar_testes_go.bat
+
+# Executar testes Python  
+scripts\executar_testes_python.bat
+
+# Gerar gráficos comparativos
+scripts\gerar_graficos.bat
 ```
 
-## Personalização
+### Para Atualizar Imagens (apenas você):
+```bash
+# Quando modificar código dos servidores
+scripts\atualizar_imagens.bat
+```
 
-Os scripts podem ser editados para:
-- Alterar parâmetros de teste
-- Adicionar/remover cenários
-- Modificar configurações de Docker/K8s
-- Personalizar outputs
+## 💡 Observações Importantes
+
+- **Imagens Docker**: São baixadas automaticamente do Docker Hub
+- **Sem login necessário**: Para executar testes (imagens são públicas)
+- **Login só para atualizar**: Apenas você precisa fazer login para atualizar imagens
+- **Execução independente**: Cada teste (Go/Python) roda separadamente
+
+## 📊 Resultados
+
+Todos os scripts geram resultados em:
+- **JSON**: `resultados/resultados_*_k8s_*.json`
+- **Gráficos**: `resultados/graficos/`
+- **Relatórios**: `resultados/relatorios/`
+
+## 🛠️ Requisitos
+
+- Docker Desktop com Kubernetes habilitado
+- Python 3.8+ com matplotlib, pandas, seaborn
+- Go 1.21+ (para compilar clientes)
+- kubectl configurado
+- Conta Docker Hub (apenas para build/push)
+
+## ⚡ Execução Rápida
+
+```bash
+# Validar ambiente
+python validar_projeto.py
+
+# Baixar imagens (primeira vez)
+scripts\pull-imagens-dockerhub.bat
+
+# Executar testes completos
+scripts\executar_testes_go.bat
+scripts\executar_testes_python.bat
+
+# Gerar análises visuais
+scripts\gerar_graficos.bat
+```

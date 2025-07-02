@@ -1,87 +1,203 @@
-# ProjetoK - Sistema Cliente-Servidor com Análise de Performance
+# ProjetoK - Análise de Performance TCP
 
-Sistema completo de testes de carga cliente-servidor com protocolo PING/PONG, utiliza as linguagens Python e Go, possui análise detalhada de performance e execução em ambientes locais, Docker e Kubernetes.
+Projeto para análise de performance de comunicação TCP entre clientes e servidores usando **Go** e **Python**, com servidores executando em **Kubernetes** usando **suas próprias imagens Docker públicas**.
 
-## 🚀 Execução Rápida
+## 🚀 INÍCIO RÁPIDO 
 
-### Windows
-```batch
-scripts\executar_windows.bat
-```
+**Execute apenas UM dos comandos:**
 
-### Linux/macOS
 ```bash
-chmod +x scripts/executar_linux.sh
-./scripts/executar_linux.sh
+# Para testes Go
+scripts\executar_testes_go.bat
+
+# Para testes Python  
+scripts\executar_testes_python.bat
 ```
 
-## 📁 Estrutura do Projeto
+**TUDO é configurado automaticamente:**
+- ✅ Verifica Docker e Python
+- ✅ Baixa e instala Kubernetes (kind) se necessário
+- ✅ Cria cluster com NodePort otimizado
+- ✅ Baixa suas imagens do Docker Hub
+- ✅ Implanta servidores e executa testes
 
-```
-ProjetoK/
-├── src/                        # Código fonte
-│   ├── cliente/               # Clientes Python e Go
-│   ├── servidor/              # Servidor Python
-│   └── testes/                # Scripts de teste e análise
-├── resultados/                # Outputs organizados
-│   ├── csv/                   # Dados em CSV
-│   ├── graficos/              # Gráficos PNG
-│   └── relatorios/            # Relatórios gerados 
-├── config/                    # Configurações
-│   ├── docker/                # Dockerfile
-│   └── kubernetes/            # Manifests K8s
-├── scripts/                   # Scripts de execução
-└── requirements.txt           # Dependências Python
-```
+## 🐳 Suas Imagens Docker Públicas
 
-## 📊 Recursos Implementados
+Este projeto usa **exclusivamente** suas imagens customizadas:
 
-- ✅ **Protocolo PING/PONG** sobre TCP/JSON
-- ✅ **Múltiplas Linguagens**: Python e Go
-- ✅ **Análise**: 10+ gráficos individuais por cenário
-- ✅ **3000 Execuções**: 300 configurações × 10 repetições
-- ✅ **Execução Flexível**: Local, Docker, Kubernetes
-- ✅ **Scripts**: Windows e Linux
-- ✅ **Estatísticas**: Máximo, mínimo, média, mediana, desvio padrão
-- ✅ **Detecção de Outliers**: Z-score para limpeza de dados
+- **Servidor Go**: `bia18/projetok-servidor-go:latest` ← **SUA imagem**
+- **Servidor Python**: `bia18/projetok-servidor-python:latest` ← **SUA imagem**
 
-## 📈 Cenários de Teste
+## � Requisitos de Hardware
 
-- **Servidores**: 2, 4, 6, 8, 10 instâncias
-- **Clientes**: 10 a 100 (incrementos de 10)
-- **Mensagens por cliente**: 1, 10, 100, 500, 1000, 10000
-- **Total**: 5 × 10 × 6 × 10 = **3000 execuções**
+### ⚠️ **ATENÇÃO: Uso Intensivo de Recursos**
 
-## 📊 Gráficos Gerados
+Este projeto é otimizado para **alta performance** e pode usar recursos significativos:
 
-### Gráficos Individuais por Cenário
-- `analise_performance_1_mensagens.png`
-- `analise_performance_10_mensagens.png`
-- `analise_performance_100_mensagens.png`
-- `analise_performance_500_mensagens.png`
-- `analise_performance_1000_mensagens.png`
-- `analise_performance_10000_mensagens.png`
+#### **Configuração Atual (Otimizada):**
+- **RAM**: Até **10GB** com configuração máxima (10 pods × 1GB cada)
+- **CPU**: Até **20 cores** virtuais (10 pods × 2 cores cada)  
+- **Rede**: Tráfego intenso TCP entre clientes e servidores
 
-### Gráfico de Performance Geral
-- `analise_performance.png` (4 visualizações em 1)
+#### **Requisitos Mínimos:**
+- **RAM**: 8GB+ (recomendado: 16GB+)
+- **CPU**: 4+ cores (recomendado: 6+ cores)
+- **Armazenamento**: 2GB livres para Docker e resultados
 
-## 🔧 Requisitos Mínimos
+#### **Configuração Testada (Ideal):**
+- **CPU**: Ryzen 5 5600GT (6 cores/12 threads) ✅
+- **RAM**: 32GB ✅  
+- **Resultado**: Performance excelente com todos os recursos
 
-- **Python 3.11+** com pip
-- **Go 1.21+** 
-- **Docker** (para containers)
-- **Kubernetes** (para testes distribuídos)
+#### **⚙️ Para Hardware Mais Limitado:**
+Se você tem menos recursos, pode editar os deployments em:
+- `config/kubernetes/deployment-servidor-go.yaml`
+- `config/kubernetes/deployment-servidor-python.yaml`
+
+Reduza os valores de `requests` e `limits` para adequar ao seu hardware.
+
+## �🛠️ Pré-requisitos
+
+- **Docker Desktop** (https://www.docker.com/products/docker-desktop)
+- **Python 3.8+** com: `pip install matplotlib pandas seaborn`
+
+## ⚡ Scripts Essenciais (apenas 4)
+
+1. **`scripts\executar_testes_go.bat`** - Configura ambiente e executa testes Go
+2. **`scripts\executar_testes_python.bat`** - Configura ambiente e executa testes Python
+3. **`scripts\gerar_graficos.bat`** - Gera gráficos comparativos
+4. **`scripts\atualizar_imagens.bat`** - Atualiza suas imagens no Docker Hub (dev only)
+
+### Scripts Opcionais
+- **`scripts\limpar_ambiente.bat`** - Remove cluster Kubernetes (opcional)
+
+## 🌐 Arquitetura
+
+### Servidores (Kubernetes)
+- Deploy automático em pods Kubernetes
+- **Acesso direto via NodePort**:
+  - **Servidor Go**: `http://localhost:30001`
+  - **Servidor Python**: `http://localhost:30002`
+- Escalabilidade automática conforme configuração
+- **Usa SUAS imagens customizadas**: Baixadas automaticamente do SEU Docker Hub (bia18)
+
+### Clientes (Local)
+- Executáveis locais que conectam diretamente aos NodePorts
+- Go: `cliente_go.exe`, Python: `cliente.py`
+- **Conectividade otimizada** para testes de performance
+
+## 📊 Configurações de Teste
+
+- **Servidores**: 2, 4, 6, 8, 10 replicas
+- **Clientes**: 10-100 clientes simultâneos  
+- **Mensagens**: 1-10000 mensagens por cliente
+- **Repetições**: 10 execuções por configuração
+- **Total**: 3.000 execuções por linguagem
+
+## 🎯 Acesso aos Serviços
+
+Após executar qualquer script de teste, os serviços estarão disponíveis em:
+
+- **🔹 Servidor Go**: http://localhost:30001
+  - Health check: http://localhost:30001/health
+  - Endpoint principal: http://localhost:30001
+
+- **🔹 Servidor Python**: http://localhost:30002  
+  - Health check: http://localhost:30002/health
+  - Endpoint principal: http://localhost:30002
 
 ## 📈 Resultados
 
-Os testes geram automaticamente:
-- Dados brutos em CSV
-- Gráficos de análise visual
-- Relatórios
-- Comparações entre linguagens
-- Métricas de escalabilidade
-- Estatísticas com detecção de outliers
+- **JSON**: `resultados/resultados_*_k8s_*.json`
+- **Gráficos**: `resultados/graficos/*.png`
+- **Relatórios**: `resultados/relatorio_estatistico.csv`
 
----
+## 🔧 Comandos Úteis
 
-**Projeto desenvolvido para a cadeira Rede de Computadores.**
+```bash
+# Status Kubernetes
+kubectl get pods
+kubectl get services
+
+# Monitorar recursos (CPU/RAM)
+kubectl top pods
+kubectl top nodes
+
+# Logs
+kubectl logs [nome-do-pod]
+
+# Escalar serviços (ajustar conforme seu hardware)
+kubectl scale deployment servidor-go-deployment --replicas=5
+kubectl scale deployment servidor-python-deployment --replicas=3
+
+# Limpar ambiente (opcional)
+scripts\limpar_ambiente.bat
+```
+
+## 🔄 Fluxo de Desenvolvimento/Debug
+
+### 1. Testar mudanças no código
+```bash
+# Atualizar suas imagens Docker
+scripts\atualizar_imagens.bat
+```
+
+### 2. Executar testes específicos
+```bash
+# Testar apenas Go
+scripts\executar_testes_go.bat
+
+# Testar apenas Python  
+scripts\executar_testes_python.bat
+```
+
+### 3. Analisar resultados
+```bash
+# Gerar gráficos comparativos
+scripts\gerar_graficos.bat
+```
+
+### 4. Limpeza (se necessário)
+```bash
+# Remover cluster para recomeçar
+scripts\limpar_ambiente.bat
+```
+
+## 🆘 Solução de Problemas
+
+### Problema: "Docker não encontrado"
+**Solução**: Instale Docker Desktop: https://www.docker.com/products/docker-desktop
+
+### Problema: "Erro ao criar cluster"  
+**Solução**: 
+1. Verifique se Docker Desktop está rodando
+2. Execute: `scripts\limpar_ambiente.bat`
+3. Execute novamente o script de teste
+
+### Problema: "Pods não ficam prontos"
+**Solução**:
+1. Verifique conectividade com internet (para baixar imagens)
+2. Execute: `kubectl get pods` para ver status
+3. Execute: `kubectl logs [nome-do-pod]` para ver erros
+
+### Problema: "Sistema lento/travando durante testes"
+**Solução**:
+1. **Monitor recursos**: Execute `kubectl top pods` e `kubectl top nodes`
+2. **Hardware limitado**: Edite os deployments em `config/kubernetes/` e reduza:
+   - `resources.requests.memory` (ex: de "512Mi" para "256Mi")
+   - `resources.requests.cpu` (ex: de "1000m" para "500m") 
+   - `resources.limits.memory` (ex: de "1Gi" para "512Mi")
+   - `resources.limits.cpu` (ex: de "2000m" para "1000m")
+3. **Escale menos pods**: Reduza configurações de servidores para [2, 4, 6] em vez de [2, 4, 6, 8, 10]
+
+### Problema: "Out of memory" ou "Docker Desktop travando"
+**Solução**:
+1. **Aumente RAM do Docker Desktop**: Settings → Resources → Memory (min 8GB)
+2. **Reduza configuração**: Edite `deployment-servidor-*.yaml` (reduza limits)
+3. **Execute por partes**: Teste Go primeiro, depois Python separadamente
+
+### Problema: "Resultados inconsistentes"
+**Solução**:
+1. Execute: `scripts\atualizar_imagens.bat` (se mudou código)
+2. Execute: `scripts\limpar_ambiente.bat` (limpar cache)
+3. Execute novamente os testes

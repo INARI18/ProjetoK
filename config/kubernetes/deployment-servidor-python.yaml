@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servidor-python-deployment
+spec:
+  replicas: 2  # Será ajustado dinamicamente pelos testes (2, 4, 6, 8, 10)
+  selector:
+    matchLabels:
+      app: servidor-python
+  template:
+    metadata:
+      labels:
+        app: servidor-python
+    spec:
+      containers:
+        - name: servidor-python
+          image: bia18/projetok-servidor-python:latest
+          imagePullPolicy: Always  # Sempre baixar a versão mais recente do Docker Hub
+          ports:
+            - containerPort: 8000
+          command: ["python", "servidor.py"]
+          args: ["--porta", "8000"]
+          resources:
+            requests:
+              memory: "768Mi"   # Aumentado: Python precisa de mais memória
+              cpu: "1500m"      # 1.5 CPU cores por pod
+            limits:
+              memory: "1.5Gi"   # Aumentado para melhor throughput
+              cpu: "3000m"      # 3 CPU cores por pod 

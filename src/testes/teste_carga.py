@@ -1,218 +1,285 @@
-import subprocess
+#!/usr/bin/env python3
+"""
+Teste de Carga - ProjetoK
+Teste rápido para validar o funcionamento dos servidores Kubernetes
+"""
+
 import time
-import csv
-import os
-import random
-import glob
-from concurrent.futures import ThreadPoolExecutor
-from graficos import gerar_graficos, gerar_graficos_individuais_por_mensagem
-from analise_estatistica import calcular_estatisticas_avancadas
+import json
+import subprocess
+import threading
+import socket
+from pathlib import Path
+from datetime import datetime
 
-# Configurações de teste
-SERVIDOR_CMD = "python ../servidor/servidor.py --porta {}"
-CLIENTE_PYTHON_CMD = "python ../cliente/cliente.py --host 127.0.0.1 --porta {} --mensagens {} --cliente-id {}"
-CLIENTE_GO_CMD = "../cliente/cliente --host=127.0.0.1 --porta={} --mensagens={} --cliente-id={}"
-PORTA_BASE = 8000
+# Obter caminho absoluto da raiz do projeto
+SCRIPT_DIR = Path(__file__).parent.absolute()
+PROJECT_ROOT = SCRIPT_DIR.parent.parent
+CLIENTE_DIR = PROJECT_ROOT / "src" / "cliente (local)"
 
-servidores_processos = []
-CSV_SAIDA = "../../resultados/csv/resultados_teste_carga.csv"
-
-def limpar_arquivos_antigos():
-    """Remove arquivos de resultado anteriores para evitar confusão"""
-    arquivos_para_limpar = [
-        "../../resultados/csv/resultados_teste_carga.csv",
-        "../../resultados/csv/requests_consolidado.csv",
-        "../../resultados/csv/requests_porta_*.csv",
-        "../../resultados/graficos/analise_performance.png",
-        "../../resultados/relatorios/relatorio_detalhado.csv",
-        "../../resultados/csv/comparacao_linguagens.csv",
-        "../../resultados/relatorios/resumo_executivo.csv"
-    ]
-    
-    print("Limpando arquivos de execuções anteriores...")
-    for pattern in arquivos_para_limpar:
-        for arquivo in glob.glob(pattern):
-            try:
-                os.remove(arquivo)
-                print(f"Removido: {arquivo}")
-            except OSError:
-                pass
-
-def compilar_cliente_go():
-    """Compila o cliente Go se necessário"""
-    # Lista de possíveis comandos Go
-    go_commands = [
-        "go",  # Se estiver no PATH
-        r"C:\Program Files\Go\bin\go.exe",  # Local padrão Windows
-        r"C:\Go\bin\go.exe",  # Local alternativo Windows
-        "/usr/local/go/bin/go",  # Local padrão Linux/macOS
-        "/usr/bin/go",  # Local alternativo Linux
-    ]
-    
-    try:
-        if not os.path.exists("../cliente/cliente.exe") and not os.path.exists("../cliente/cliente"):
-            print("Compilando cliente Go...")
-            
-            # Tentar cada comando Go até encontrar um que funcione
-            for go_cmd in go_commands:
-                try:
-                    if os.path.exists(go_cmd) or go_cmd == "go":
-                        if os.name == 'nt':  # Windows
-                            subprocess.run([go_cmd, "build", "-o", "cliente.exe", "cliente.go"], 
-                                         check=True, cwd="../cliente", capture_output=True)
-                        else:  # Linux/macOS
-                            subprocess.run([go_cmd, "build", "-o", "cliente", "cliente.go"], 
-                                         check=True, cwd="../cliente", capture_output=True)
-                        print(f"Cliente Go compilado com sucesso usando: {go_cmd}")
-                        return True
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    continue
-            
-            print("Erro: Nenhum comando Go funcional encontrado")
-            return False
-        return True
-    except Exception as e:
-        print(f"Erro ao compilar cliente Go: {e}")
-        return False
-
-def iniciar_servidores(qtd_servidores):
-    for i in range(qtd_servidores):
-        porta = PORTA_BASE + i
-        proc = subprocess.Popen(SERVIDOR_CMD.format(porta).split(),
-                                stdout=subprocess.DEVNULL,
-                                stderr=subprocess.DEVNULL)
-        servidores_processos.append(proc)
-        time.sleep(0.5)
-
-def encerrar_servidores():
-    for proc in servidores_processos:
-        proc.terminate()
-        proc.wait()
-    servidores_processos.clear()
-
-def cliente_worker(porta, num_mensagens, cliente_id, usar_go=False):
-    inicio = time.time()
-    try:
-        if usar_go and os.path.exists("../cliente/cliente.exe"):
-            cmd = CLIENTE_GO_CMD.format(porta, num_mensagens, cliente_id).split()
-        elif usar_go and os.path.exists("../cliente/cliente"):
-            cmd = CLIENTE_GO_CMD.format(porta, num_mensagens, cliente_id).split()
-        else:
-            cmd = CLIENTE_PYTHON_CMD.format(porta, num_mensagens, cliente_id).split()
+class TesteCarga:
+    def __init__(self):
+        self.KUBERNETES_HOST = "localhost"
+        self.KUBERNETES_PORT_GO = 30001
+        self.KUBERNETES_PORT_PYTHON = 30002
         
-        subprocess.run(cmd, timeout=30, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        duracao = time.time() - inicio
-        return duracao, True
-    except Exception:
-        return None, False
-
-def testar_carga(qtd_servidores, qtd_clientes, num_mensagens, writer):
-    print(f"\n>>> Teste com {qtd_servidores} servidores, {qtd_clientes} clientes e {num_mensagens} mensagens")
-
-    iniciar_servidores(qtd_servidores)
-    time.sleep(3)  # Aguardar servidores iniciarem
-
-    tempos = []
-    erros = 0
-    usar_go = random.choice([True, False])  # Alternar entre Python e Go
-
-    portas = [PORTA_BASE + i for i in range(qtd_servidores)]
-
-    with ThreadPoolExecutor(max_workers=min(qtd_clientes, 50)) as executor:
-        futuros = []
-        for i in range(qtd_clientes):
-            porta = portas[i % qtd_servidores]
-            cliente_id = f"cliente_{i}_{int(time.time() * 1000)}"
-            futuros.append(executor.submit(cliente_worker, porta, num_mensagens, cliente_id, usar_go))
-
-        for futuro in futuros:
-            duracao, sucesso = futuro.result()
-            if sucesso:
-                tempos.append(duracao)
+        self._verificar_prerrequisitos()
+    
+    def _verificar_prerrequisitos(self):
+        """Verificar pré-requisitos básicos"""
+        print("🔍 Verificando pré-requisitos...")
+        
+        # Verificar kubectl
+        try:
+            result = subprocess.run(["kubectl", "version", "--client"], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode != 0:
+                raise Exception("kubectl não funcionando")
+            print("✅ kubectl OK")
+        except Exception as e:
+            print(f"❌ Erro kubectl: {e}")
+            return False
+        
+        # Verificar executável Go
+        cliente_go = CLIENTE_DIR / "cliente_go.exe"
+        if not cliente_go.exists():
+            print("⚠️  Cliente Go não encontrado, compilando...")
+            self._compilar_cliente_go()
+        else:
+            print("✅ Cliente Go OK")
+        
+        # Verificar cliente Python
+        cliente_python = CLIENTE_DIR / "cliente.py"
+        if not cliente_python.exists():
+            print("❌ Cliente Python não encontrado")
+            return False
+        else:
+            print("✅ Cliente Python OK")
+        
+        return True
+    
+    def _compilar_cliente_go(self):
+        """Compilar cliente Go"""
+        try:
+            import os
+            os.chdir(CLIENTE_DIR)
+            result = subprocess.run(["go", "build", "-o", "cliente_go.exe", "cliente.go"], 
+                                  capture_output=True, text=True, timeout=30)
+            if result.returncode != 0:
+                print(f"❌ Erro compilação Go: {result.stderr}")
+                return False
+            print("✅ Cliente Go compilado")
+            return True
+        except Exception as e:
+            print(f"❌ Erro ao compilar Go: {e}")
+            return False
+    
+    def _testar_conectividade(self, host, port, nome):
+        """Testar conectividade com servidor"""
+        print(f"🔌 Testando {nome} em {host}:{port}...")
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        
+        try:
+            result = sock.connect_ex((host, port))
+            if result == 0:
+                print(f"✅ {nome} acessível")
+                return True
             else:
-                erros += 1
-
-    media = sum(tempos) / len(tempos) if tempos else 0
-    throughput = (len(tempos) * num_mensagens) / media if media > 0 else 0
-    linguagem = "Go" if usar_go else "Python"
+                print(f"❌ {nome} não acessível (porta {port})")
+                return False
+        except Exception as e:
+            print(f"❌ Erro {nome}: {e}")
+            return False
+        finally:
+            sock.close()
     
-    print(f"-> Linguagem: {linguagem} | Media: {media:.3f}s | Throughput: {throughput:.2f} req/s | Sucesso: {len(tempos)} | Erros: {erros}")
-
-    # Salva no CSV com mais detalhes
-    writer.writerow([
-        qtd_servidores, qtd_clientes, num_mensagens, linguagem,
-        f"{media:.3f}", f"{throughput:.2f}", len(tempos), erros
-    ])
+    def _executar_cliente_go(self, num_clientes=5, num_mensagens=10):
+        """Testar cliente Go"""
+        print(f"🔥 Testando Go: {num_clientes} clientes, {num_mensagens} mensagens cada")
+        
+        threads = []
+        sucessos = 0
+        falhas = 0
+        
+        def executar_cliente_individual(cliente_id):
+            nonlocal sucessos, falhas
+            try:
+                cmd = [
+                    str(CLIENTE_DIR / "cliente_go.exe"),
+                    f"-host={self.KUBERNETES_HOST}",
+                    f"-porta={self.KUBERNETES_PORT_GO}",
+                    f"-mensagens={num_mensagens}",
+                    f"-cliente-id=teste_go_{cliente_id}"
+                ]
+                
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    sucessos += 1
+                else:
+                    falhas += 1
+                    
+            except Exception:
+                falhas += 1
+        
+        start_time = time.time()
+        
+        # Iniciar clientes
+        for i in range(num_clientes):
+            thread = threading.Thread(target=executar_cliente_individual, args=(i,))
+            threads.append(thread)
+            thread.start()
+        
+        # Aguardar conclusão
+        for thread in threads:
+            thread.join()
+        
+        end_time = time.time()
+        tempo_total = end_time - start_time
+        
+        print(f"   ⏱️  Tempo: {tempo_total:.3f}s")
+        print(f"   ✅ Sucessos: {sucessos}")
+        print(f"   ❌ Falhas: {falhas}")
+        
+        return sucessos > 0
     
-    encerrar_servidores()
-    time.sleep(2)  # Pausa entre testes
+    def _executar_cliente_python(self, num_clientes=5, num_mensagens=10):
+        """Testar cliente Python"""
+        print(f"🐍 Testando Python: {num_clientes} clientes, {num_mensagens} mensagens cada")
+        
+        threads = []
+        sucessos = 0
+        falhas = 0
+        
+        def executar_cliente_individual(cliente_id):
+            nonlocal sucessos, falhas
+            try:
+                cmd = [
+                    "python",
+                    str(CLIENTE_DIR / "cliente.py"),
+                    f"--host={self.KUBERNETES_HOST}",
+                    f"--porta={self.KUBERNETES_PORT_PYTHON}",
+                    f"--mensagens={num_mensagens}",
+                    f"--cliente-id=teste_python_{cliente_id}"
+                ]
+                
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    sucessos += 1
+                else:
+                    falhas += 1
+                    
+            except Exception:
+                falhas += 1
+        
+        start_time = time.time()
+        
+        # Iniciar clientes
+        for i in range(num_clientes):
+            thread = threading.Thread(target=executar_cliente_individual, args=(i,))
+            threads.append(thread)
+            thread.start()
+        
+        # Aguardar conclusão
+        for thread in threads:
+            thread.join()
+        
+        end_time = time.time()
+        tempo_total = end_time - start_time
+        
+        print(f"   ⏱️  Tempo: {tempo_total:.3f}s")
+        print(f"   ✅ Sucessos: {sucessos}")
+        print(f"   ❌ Falhas: {falhas}")
+        
+        return sucessos > 0
+    
+    def executar_teste_completo(self):
+        """Executar teste de carga completo"""
+        print("🚀 TESTE DE CARGA - PROJETO K")
+        print("=" * 50)
+        
+        # Verificar conectividade
+        go_ok = self._testar_conectividade(self.KUBERNETES_HOST, self.KUBERNETES_PORT_GO, "Servidor Go")
+        python_ok = self._testar_conectividade(self.KUBERNETES_HOST, self.KUBERNETES_PORT_PYTHON, "Servidor Python")
+        
+        if not go_ok and not python_ok:
+            print("\n❌ Nenhum servidor acessível!")
+            print("   Verifique se os deployments Kubernetes estão rodando")
+            print("   Use: kubectl get pods")
+            return False
+        
+        print("\n" + "=" * 50)
+        
+        # Testar Go se disponível
+        if go_ok:
+            try:
+                go_sucesso = self._executar_cliente_go()
+                if go_sucesso:
+                    print("✅ Teste Go: PASSOU")
+                else:
+                    print("❌ Teste Go: FALHOU")
+            except Exception as e:
+                print(f"❌ Erro teste Go: {e}")
+                go_sucesso = False
+        else:
+            go_sucesso = False
+            print("⚠️  Teste Go: PULADO (servidor indisponível)")
+        
+        print()
+        
+        # Testar Python se disponível
+        if python_ok:
+            try:
+                python_sucesso = self._executar_cliente_python()
+                if python_sucesso:
+                    print("✅ Teste Python: PASSOU")
+                else:
+                    print("❌ Teste Python: FALHOU")
+            except Exception as e:
+                print(f"❌ Erro teste Python: {e}")
+                python_sucesso = False
+        else:
+            python_sucesso = False
+            print("⚠️  Teste Python: PULADO (servidor indisponível)")
+        
+        print("\n" + "=" * 50)
+        print("📊 RESUMO DO TESTE DE CARGA")
+        print("=" * 50)
+        
+        if go_sucesso and python_sucesso:
+            print("🎉 TODOS OS TESTES PASSARAM!")
+            print("   O sistema está funcionando corretamente")
+            print("   Pronto para executar os testes completos")
+        elif go_sucesso or python_sucesso:
+            print("⚠️  ALGUNS TESTES PASSARAM")
+            print("   Verifique os servidores que falharam")
+        else:
+            print("❌ TODOS OS TESTES FALHARAM!")
+            print("   Verifique a configuração do Kubernetes")
+        
+        print("\n💡 Próximos passos:")
+        if go_sucesso and python_sucesso:
+            print("   - Execute: scripts\\executar_testes_go.bat")
+            print("   - Execute: scripts\\executar_testes_python.bat")
+            print("   - Execute: scripts\\gerar_graficos.bat")
+        else:
+            print("   - Execute: scripts\\deploy_kubernetes.bat")
+            print("   - Verifique: kubectl get pods")
+            print("   - Execute este teste novamente")
+        
+        return go_sucesso and python_sucesso
+
+def main():
+    """Função principal"""
+    try:
+        teste = TesteCarga()
+        teste.executar_teste_completo()
+        
+    except KeyboardInterrupt:
+        print("\n⚠️  Teste interrompido pelo usuário")
+    except Exception as e:
+        print(f"\n❌ Erro durante teste: {e}")
 
 if __name__ == "__main__":
-    # Limpar arquivos anteriores
-    limpar_arquivos_antigos()
-    
-    # Tentar compilar cliente Go
-    go_disponivel = compilar_cliente_go()
-    
-    with open(CSV_SAIDA, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow([
-            "Servidores", "Clientes", "Mensagens", "Linguagem", 
-            "Tempo Médio (s)", "Throughput (req/s)", "Sucessos", "Erros"
-        ])
-
-        # Cenários de teste CONFORME ESPECIFICAÇÃO EXATA:
-        # 5 servidores × 10 clientes × 6 mensagens × 10 repetições = 3000 execuções
-        
-        configuracoes_teste = []
-        for servidores in range(2, 11, 2):        # 2, 4, 6, 8, 10 servidores
-            for clientes in range(10, 101, 10):   # 10, 20, ..., 100 clientes
-                for mensagens in [1, 10, 100, 500, 1000, 10000]:  # 6 tipos de mensagem EXATOS
-                    configuracoes_teste.append((servidores, clientes, mensagens))
-        
-        total_execucoes = len(configuracoes_teste) * 10
-        execucao_atual = 0
-        
-        print(f"Iniciando {total_execucoes} execuções ({len(configuracoes_teste)} configurações × 10 repetições)")
-        
-        for servidores, clientes, mensagens in configuracoes_teste:
-            for repeticao in range(10):   # 10 repetições por configuração
-                execucao_atual += 1
-                print(f"Execução {execucao_atual}/{total_execucoes} - {servidores}S {clientes}C {mensagens}M (repetição {repeticao + 1}/10)")
-                testar_carga(servidores, clientes, mensagens, writer)
-                time.sleep(0.5)  # Pausa menor entre repetições
-
-    print(f"\nResultados salvos em '{CSV_SAIDA}'")
-    print("Gerando gráficos individuais por cenário de mensagens...")
-    
-    # Gerar gráficos individuais por cenário de mensagens
-    gerar_graficos_individuais_por_mensagem()
-    
-    print("Gerando gráfico consolidado...")
-    # Gerar gráficos dos resultados
-    gerar_graficos()
-    
-    # Executar análise estatística avançada
-    print("Executando análise estatística avançada...")
-    calcular_estatisticas_avancadas()
-    
-    # Exibir resumo dos arquivos gerados
-    print("\n=== ARQUIVOS GERADOS ===")
-    arquivos_resultado = [
-        "../../resultados/csv/resultados_teste_carga.csv",
-        "../../resultados/csv/requests_consolidado.csv", 
-        "../../resultados/graficos/analise_performance.png",
-        "../../resultados/relatorios/relatorio_detalhado.csv",
-        "../../resultados/csv/comparacao_linguagens.csv",
-        "../../resultados/relatorios/resumo_executivo.csv"
-    ]
-    
-    for arquivo in arquivos_resultado:
-        if os.path.exists(arquivo):
-            tamanho = os.path.getsize(arquivo)
-            print(f"✓ {arquivo} ({tamanho:,} bytes)")
-        else:
-            print(f"✗ {arquivo} (não gerado)")
-    
-    print(f"\nTotal de cenários testados: 3000 (300 configurações × 10 repetições)")
-    print("Análise completa disponível em: analise_performance.png")
+    main()

@@ -1,0 +1,17 @@
+# Dockerfile para Servidor Go
+FROM golang:1.21-alpine
+
+WORKDIR /app
+
+# Copiar código fonte do servidor Go
+COPY ["src/servidor (local)/servidor.go", "."]
+COPY ["src/servidor (local)/go.mod", "."]
+
+# Compilar o servidor
+RUN go mod tidy && go build -o servidor servidor.go
+
+# Expor porta
+EXPOSE 8000
+
+# Comando padrão
+CMD ["./servidor", "--porta", "8000"]

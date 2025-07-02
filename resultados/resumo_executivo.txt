@@ -1,0 +1,30 @@
+================================================================================
+RESUMO EXECUTIVO - PROJETO K
+================================================================================
+Data de geração: 02/07/2025 10:53:34
+
+LINGUAGEM GO
+----------------------------------------
+Total de execuções: 2560
+Throughput médio: 3608.97 msg/s
+Throughput máximo: 33204.05 msg/s
+Throughput mínimo: 153.83 msg/s
+Latência média: 1.920 ms
+Tempo médio de execução: 16.189 s
+
+LINGUAGEM PYTHON
+----------------------------------------
+Total de execuções: 40
+Throughput médio: 136.30 msg/s
+Throughput máximo: 166.57 msg/s
+Throughput mínimo: 60.36 msg/s
+Latência média: 8.054 ms
+Tempo médio de execução: 9.313 s
+
+COMPARAÇÃO GO vs PYTHON
+----------------------------------------
+Razão de throughput (Go/Python): 26.48x
+Razão de latência (Python/Go): 4.19x
+Go é 26.5x mais rápido que Python em throughput
+
+📊 DADOS DETALHADOS DISPONÍVEIS EM: relatorio_estatistico.csv

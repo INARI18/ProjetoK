@@ -4,31 +4,57 @@ Esta pasta contém todas as configurações para execução em diferentes ambien
 
 ## Subpastas
 
-- **`docker/`** - Dockerfile para containerização
+- **`docker/`** - Dockerfiles para imagens customizadas dos servidores
 - **`kubernetes/`** - Manifests para deploy no K8s
 
-## Docker
+## 🐳 Docker Hub
 
-O Dockerfile usa multi-stage build:
-1. **Stage 1**: Compila cliente Go
-2. **Stage 2**: Configura ambiente Python e copia executáveis
+As imagens estão hospedadas publicamente no Docker Hub:
+- **bia18/projetok-servidor-go:latest** - Servidor Go
+- **bia18/projetok-servidor-python:latest** - Servidor Python
 
-### Build
+### Scripts disponíveis
 ```bash
-docker build -f config/docker/Dockerfile -t projetok:latest .
+# Baixar imagens do Docker Hub (recomendado)
+scripts\pull-imagens-dockerhub.bat
+
+# Construir e enviar para Docker Hub (para desenvolvimento)
+scripts\build-push-dockerhub.bat
+
+# Construir localmente (para testes locais)
+scripts\build-imagens.bat
+```
+
+### Build manual para Docker Hub
+```bash
+# Fazer login no Docker Hub
+docker login
+
+# Servidor Go
+docker build -f config\docker\Dockerfile.servidor-go -t bia18/projetok-servidor-go:latest .
+docker push bia18/projetok-servidor-go:latest
+
+# Servidor Python  
+docker build -f config\docker\Dockerfile.servidor-python -t bia18/projetok-servidor-python:latest .
+docker push bia18/projetok-servidor-python:latest
 ```
 
 ## Kubernetes
 
 Três recursos principais:
-- **`deployment-servidor.yaml`** - Deploy dos servidores
-- **`service-servidor.yaml`** - Serviço para load balancing
-- **`job-teste-carga.yaml`** - Job para execução dos testes
+- **`deployment-servidor-go.yaml`** - Deploy do servidor Go
+- **`deployment-servidor-python.yaml`** - Deploy do servidor Python  
+- **`service-servidor.yaml`** - Serviços para load balancing
 
 ### Deploy
 ```bash
 kubectl apply -f config/kubernetes/
 ```
+
+### Imagens utilizadas
+- **bia18/projetok-servidor-go:latest** - Imagem do Docker Hub para servidor Go
+- **bia18/projetok-servidor-python:latest** - Imagem do Docker Hub para servidor Python
+- **imagePullPolicy**: Always (sempre baixa a versão mais recente)
 
 ## Configurações
 
