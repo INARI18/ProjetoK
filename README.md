@@ -16,21 +16,19 @@ Este projeto usa imagens customizadas:
 - **Servidor Go**: `bia18/projetok-servidor-go:latest` 
 - **Servidor Python**: `bia18/projetok-servidor-python:latest`
 
-## � Requisitos de Hardware
-
 ### ⚠️ **ATENÇÃO: Uso de Recursos**
 
-Este projeto pode usar recursos significativos:
+Este projeto realiza testes intensivos que utilizam recursos significativos:
 
-#### **Configuração Dos Testes:**
-- **RAM**: Até **10GB** com configuração máxima (10 pods × 1GB cada)
-- **CPU**: Até **20 cores** virtuais (10 pods × 2 cores cada)  
-- **Rede**: Tráfego intenso TCP entre clientes e servidores     
+#### **Recursos Utilizados:**
+- **CPU**: Até **30 cores virtuais** no total (10 pods × 3 cores cada)
+- **RAM**: Até **15GB** no pico (10 pods × 1.5GB cada)
+- **Rede**: Tráfego TCP intenso entre clientes e servidores
+- **Duração**: Aproximadamente 48-50 horas para testes completos
 
-#### **Configuração Testada (Ideal):**
-- **CPU**: Ryzen 5 5600GT (6 cores/12 threads) ✅
-- **RAM**: 32GB ✅  
-- **Resultado**: Performance excelente com todos os recursos
+#### **Ambiente Testado:**
+- **Processador**: Ryzen 5 5600GT (6 cores/12 threads) ✅
+- **Memória**: 32GB DDR4 ✅
 
 #### **⚙️ Para Hardware Mais Limitado:**
 Se você tem menos recursos, pode editar os deployments em:
@@ -50,7 +48,6 @@ Reduza os valores de `requests` e `limits` para adequar ao seu hardware.
 2. **`scripts\executar_testes_go.bat`** - Configura ambiente e executa apenas testes Go
 3. **`scripts\executar_testes_python.bat`** - Configura ambiente e executa apenas testes Python
 4. **`scripts\gerar_graficos.bat`** - Gera gráficos comparativos
-5. **`scripts\atualizar_imagens.bat`** - Atualiza suas imagens no Docker Hub (dev only)
 
 ## 🌐 Arquitetura
 
@@ -125,64 +122,3 @@ scripts\gerar_graficos.bat
 resultados\graficos\relatorio_final_completo.png  # Gráfico principal
 resultados\relatorios\relatorio_resumo.txt        # Resumo textual
 ```
-
-## 🔧 Comandos Úteis
-
-```bash
-# Status Kubernetes
-kubectl get pods
-kubectl get services
-
-# Monitorar recursos (CPU/RAM)
-kubectl top pods
-kubectl top nodes
-
-# Logs
-kubectl logs [nome-do-pod]
-
-# Escalar serviços (ajustar conforme seu hardware)
-kubectl scale deployment servidor-go-deployment --replicas=5
-kubectl scale deployment servidor-python-deployment --replicas=3
-
-# Limpar ambiente (opcional)
-scripts\limpar_ambiente.bat
-```
-
-## 🆘 Solução de Problemas
-
-### Problema: "Docker não encontrado"
-**Solução**: Instale Docker Desktop: https://www.docker.com/products/docker-desktop
-
-### Problema: "Erro ao criar cluster"  
-**Solução**: 
-1. Verifique se Docker Desktop está rodando
-2. Execute: `scripts\limpar_ambiente.bat`
-3. Execute novamente o script de teste
-
-### Problema: "Pods não ficam prontos"
-**Solução**:
-1. Verifique conectividade com internet (para baixar imagens)
-2. Execute: `kubectl get pods` para ver status
-3. Execute: `kubectl logs [nome-do-pod]` para ver erros
-
-### Problema: "Sistema lento/travando durante testes"
-**Solução**:
-1. **Monitor recursos**: Execute `kubectl top pods` e `kubectl top nodes`
-2. **Hardware limitado**: Edite os deployments em `config/kubernetes/` e reduza:
-   - `resources.requests.memory` (ex: de "768Mi" para "384Mi")
-   - `resources.requests.cpu` (ex: de "1500m" para "750m") 
-   - `resources.limits.memory` (ex: de "1.5Gi" para "768Mi")
-   - `resources.limits.cpu` (ex: de "3000m" para "1500m")
-3. **Escale menos pods**: Reduza configurações de servidores para [2, 4, 6] em vez de [2, 4, 6, 8, 10]
-
-### Problema: "Out of memory" ou "Docker Desktop travando"
-**Solução**:
-1. **Aumente RAM do Docker Desktop**: Settings → Resources → Memory (min 8GB)
-2. **Reduza configuração**: Edite `deployment-servidor-*.yaml` (reduza limits)
-3. **Execute por partes**: Teste Go primeiro, depois Python separadamente
-
-### Problema: "Resultados inconsistentes"
-**Solução**:
-1. Execute: `scripts\atualizar_imagens.bat` (se mudou código)
-2. Execute: `scripts\limpar_ambiente.bat` (limpar cache)
-3. Execute novamente os testes
