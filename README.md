@@ -1,48 +1,31 @@
 # ProjetoK - Análise de Performance TCP
 
-Projeto para análise de performance de comunicação TCP entre clientes e servidores usando **Go** e **Python**, com servidores executando em **Kubernetes** usando **suas próprias imagens Docker públicas**.
-
-## 🚀 INÍCIO RÁPIDO 
-
-**Execute apenas UM dos comandos:**
-
-```bash
-# Para testes Go
-scripts\executar_testes_go.bat
-
-# Para testes Python  
-scripts\executar_testes_python.bat
-```
+Projeto para análise de performance de comunicação TCP entre clientes e servidores usando **Go** e **Python**, com servidores executando em **Kubernetes** usando **imagens Docker customizadas**.
 
 **TUDO é configurado automaticamente:**
 - ✅ Verifica Docker e Python
 - ✅ Baixa e instala Kubernetes (kind) se necessário
 - ✅ Cria cluster com NodePort otimizado
-- ✅ Baixa suas imagens do Docker Hub
+- ✅ Baixa as imagens do Docker Hub
 - ✅ Implanta servidores e executa testes
 
-## 🐳 Suas Imagens Docker Públicas
+## 🐳 Imagens Docker
 
-Este projeto usa **exclusivamente** suas imagens customizadas:
+Este projeto usa imagens customizadas:
 
-- **Servidor Go**: `bia18/projetok-servidor-go:latest` ← **SUA imagem**
-- **Servidor Python**: `bia18/projetok-servidor-python:latest` ← **SUA imagem**
+- **Servidor Go**: `bia18/projetok-servidor-go:latest` 
+- **Servidor Python**: `bia18/projetok-servidor-python:latest`
 
 ## � Requisitos de Hardware
 
-### ⚠️ **ATENÇÃO: Uso Intensivo de Recursos**
+### ⚠️ **ATENÇÃO: Uso de Recursos**
 
-Este projeto é otimizado para **alta performance** e pode usar recursos significativos:
+Este projeto pode usar recursos significativos:
 
-#### **Configuração Atual (Otimizada):**
+#### **Configuração Dos Testes:**
 - **RAM**: Até **10GB** com configuração máxima (10 pods × 1GB cada)
 - **CPU**: Até **20 cores** virtuais (10 pods × 2 cores cada)  
-- **Rede**: Tráfego intenso TCP entre clientes e servidores
-
-#### **Requisitos Mínimos:**
-- **RAM**: 8GB+ (recomendado: 16GB+)
-- **CPU**: 4+ cores (recomendado: 6+ cores)
-- **Armazenamento**: 2GB livres para Docker e resultados
+- **Rede**: Tráfego intenso TCP entre clientes e servidores     
 
 #### **Configuração Testada (Ideal):**
 - **CPU**: Ryzen 5 5600GT (6 cores/12 threads) ✅
@@ -61,15 +44,13 @@ Reduza os valores de `requests` e `limits` para adequar ao seu hardware.
 - **Docker Desktop** (https://www.docker.com/products/docker-desktop)
 - **Python 3.8+** com: `pip install matplotlib pandas seaborn`
 
-## ⚡ Scripts Essenciais (apenas 4)
+## ⚡ Scripts Essenciais
 
-1. **`scripts\executar_testes_go.bat`** - Configura ambiente e executa testes Go
-2. **`scripts\executar_testes_python.bat`** - Configura ambiente e executa testes Python
-3. **`scripts\gerar_graficos.bat`** - Gera gráficos comparativos
-4. **`scripts\atualizar_imagens.bat`** - Atualiza suas imagens no Docker Hub (dev only)
-
-### Scripts Opcionais
-- **`scripts\limpar_ambiente.bat`** - Remove cluster Kubernetes (opcional)
+1. **`teste_completo.bat`** - Executa TODOS os testes e gera gráficos em uma única etapa
+2. **`scripts\executar_testes_go.bat`** - Configura ambiente e executa apenas testes Go
+3. **`scripts\executar_testes_python.bat`** - Configura ambiente e executa apenas testes Python
+4. **`scripts\gerar_graficos.bat`** - Gera gráficos comparativos
+5. **`scripts\atualizar_imagens.bat`** - Atualiza suas imagens no Docker Hub (dev only)
 
 ## 🌐 Arquitetura
 
@@ -108,9 +89,42 @@ Após executar qualquer script de teste, os serviços estarão disponíveis em:
 
 ## 📈 Resultados
 
-- **JSON**: `resultados/resultados_*_k8s_*.json`
+- **JSON**: `resultados/relatorios/resultados_*_k8s_*.json`
+- **Arquivos Parciais**: `resultados/relatorios/resultados_*_parciais.json`
 - **Gráficos**: `resultados/graficos/*.png`
-- **Relatórios**: `resultados/relatorio_estatistico.csv`
+- **Relatório Estatístico**: `resultados/relatorios/relatorio_estatistico.csv`
+- **Relatório Resumo**: `resultados/relatorios/relatorio_resumo.txt`
+
+## 🔄 Fluxo de Desenvolvimento/Debug
+
+### 1. Testar mudanças no código
+```bash
+# Atualizar suas imagens Docker
+scripts\atualizar_imagens.bat
+```
+
+### 2. Executar testes
+```bash
+# Executar todos os testes de uma vez
+teste_completo.bat
+
+# OU executar testes específicos
+# Testar apenas Go
+scripts\executar_testes_go.bat
+
+# Testar apenas Python  
+scripts\executar_testes_python.bat
+```
+
+### 3. Analisar resultados
+```bash
+# Gerar gráficos comparativos
+scripts\gerar_graficos.bat
+
+# Localização dos resultados
+resultados\graficos\relatorio_final_completo.png  # Gráfico principal
+resultados\relatorios\relatorio_resumo.txt        # Resumo textual
+```
 
 ## 🔧 Comandos Úteis
 
@@ -131,35 +145,6 @@ kubectl scale deployment servidor-go-deployment --replicas=5
 kubectl scale deployment servidor-python-deployment --replicas=3
 
 # Limpar ambiente (opcional)
-scripts\limpar_ambiente.bat
-```
-
-## 🔄 Fluxo de Desenvolvimento/Debug
-
-### 1. Testar mudanças no código
-```bash
-# Atualizar suas imagens Docker
-scripts\atualizar_imagens.bat
-```
-
-### 2. Executar testes específicos
-```bash
-# Testar apenas Go
-scripts\executar_testes_go.bat
-
-# Testar apenas Python  
-scripts\executar_testes_python.bat
-```
-
-### 3. Analisar resultados
-```bash
-# Gerar gráficos comparativos
-scripts\gerar_graficos.bat
-```
-
-### 4. Limpeza (se necessário)
-```bash
-# Remover cluster para recomeçar
 scripts\limpar_ambiente.bat
 ```
 
@@ -184,10 +169,10 @@ scripts\limpar_ambiente.bat
 **Solução**:
 1. **Monitor recursos**: Execute `kubectl top pods` e `kubectl top nodes`
 2. **Hardware limitado**: Edite os deployments em `config/kubernetes/` e reduza:
-   - `resources.requests.memory` (ex: de "512Mi" para "256Mi")
-   - `resources.requests.cpu` (ex: de "1000m" para "500m") 
-   - `resources.limits.memory` (ex: de "1Gi" para "512Mi")
-   - `resources.limits.cpu` (ex: de "2000m" para "1000m")
+   - `resources.requests.memory` (ex: de "768Mi" para "384Mi")
+   - `resources.requests.cpu` (ex: de "1500m" para "750m") 
+   - `resources.limits.memory` (ex: de "1.5Gi" para "768Mi")
+   - `resources.limits.cpu` (ex: de "3000m" para "1500m")
 3. **Escale menos pods**: Reduza configurações de servidores para [2, 4, 6] em vez de [2, 4, 6, 8, 10]
 
 ### Problema: "Out of memory" ou "Docker Desktop travando"
