@@ -29,7 +29,8 @@ if (-not $podName) {
 Write-Host "[INFO] Encontrado pod: $podName"
 
 Write-Host "[INFO] Iniciando port-forward para o pod do servidor Python na porta $serverPort..."
-$pfJob = Start-Process -FilePath "kubectl" -ArgumentList @("port-forward", $podName, ("{0}:{0}" -f $serverPort)) -NoNewWindow -PassThru -RedirectStandardOutput "NUL" -RedirectStandardError "NUL"
+$nullFile = [System.IO.Path]::GetTempFileName()
+$pfJob = Start-Process -FilePath "kubectl" -ArgumentList @("port-forward", $podName, ("{0}:{0}" -f $serverPort)) -NoNewWindow -PassThru -RedirectStandardOutput "NUL" -RedirectStandardError $nullFile
 
 # Aguarda o servidor realmente aceitar conexões múltiplas
 $maxTentativas = 20
@@ -92,4 +93,5 @@ Write-Host "[INFO] Teste de carga Python finalizado! Veja os resultados em 'resu
 if ($pfJob) {
     Write-Host "[INFO] Encerrando port-forward..."
     $pfJob.Kill()
+    if (Test-Path $nullFile) { Remove-Item $nullFile -Force }
 }
