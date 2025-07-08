@@ -1,5 +1,3 @@
-# ProjetoK
-
 ## Descrição
 
 ProjetoK é um ambiente de testes de desempenho para servidores TCP implementados em Go e Python, com clientes também nessas linguagens. O objetivo é comparar o desempenho dos servidores sob diferentes cargas, utilizando automação de testes, análise estatística e geração de relatórios.
