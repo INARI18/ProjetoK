@@ -1,0 +1,12 @@
+# Dockerfile para servidor Go
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY src/server/server-go.go .
+RUN go build -o server-go server-go.go
+
+FROM alpine:latest
+WORKDIR /app
+COPY --from=builder /app/server-go .
+COPY src/results /app/results
+EXPOSE 9000
+CMD ["./server-go"]

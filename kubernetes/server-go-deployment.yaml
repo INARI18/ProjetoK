@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-go
+spec:
+  replicas: 2 # Altere para 2, 4, 6, 8, 10 conforme o teste
+  selector:
+    matchLabels:
+      app: server-go
+  template:
+    metadata:
+      labels:
+        app: server-go
+    spec:
+      containers:
+      - name: server-go
+        image: bia18/server-go:latest # Altere para o nome correto do seu Docker Hub
+        ports:
+        - containerPort: 9000
+        volumeMounts:
+        - name: results
+          mountPath: /app/results
+      volumes:
+      - name: results
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server-go
+spec:
+  selector:
+    app: server-go
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 9000
+      targetPort: 9000
+      nodePort: 30001

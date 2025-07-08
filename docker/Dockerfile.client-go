@@ -1,0 +1,21 @@
+# Dockerfile para rodar o cliente Go e o script de teste bash
+FROM golang:1.24-alpine AS builder
+WORKDIR /app
+COPY src/client/go.mod .
+COPY src/client/go.sum .
+RUN go mod download
+COPY src/client/client-go.go .
+RUN go build -o client-go client-go.go
+
+FROM alpine:latest
+RUN apk add --no-cache bash curl
+# Instala kubectl
+RUN curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl \
+    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
+    && rm kubectl
+WORKDIR /app
+COPY --from=builder /app/client-go .
+COPY scripts/run-all-go-tests.sh /app/run-all-go-tests.sh
+COPY --from=builder /app/client-go.go .
+RUN chmod +x /app/run-all-go-tests.sh
+ENTRYPOINT ["/app/run-all-go-tests.sh"]

@@ -1,0 +1,8 @@
+# Dockerfile para servidor Python
+FROM python:3.11-slim
+WORKDIR /app
+COPY src/server/server-python.py .
+COPY src/results /app/results
+RUN pip install --no-cache-dir --upgrade pip
+EXPOSE 9000
+CMD ["python", "server-python.py"]
