@@ -90,9 +90,9 @@ func main() {
 		numServidores, _ = strconv.Atoi(os.Args[6])
 	}
 	if len(os.Args) > 7 {
-		rodadaNum, err := strconv.Atoi(os.Args[7])
-		if err == nil {
-			rodadaID = fmt.Sprintf("R%d", rodadaNum)
+		rodadaID = os.Args[7]
+		if n, err := strconv.Atoi(rodadaID); err == nil {
+			rodadaID = fmt.Sprintf("R%d", n)
 		}
 	}
 	if len(os.Args) > 8 {

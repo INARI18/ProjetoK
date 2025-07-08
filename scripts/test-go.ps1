@@ -69,7 +69,7 @@ if (Test-Path "results/reports/test-go.csv") { Remove-Item "results/reports/test
 $repeticoes = 10
 $totalExecucoes = $servidoresList.Count * $clientesList.Count * $mensagensList.Count * $repeticoes
 $execucaoAtual = 1
-
+$c = 1
 foreach ($numServidores in $servidoresList) {
     Write-Host "[INFO] Escalando deployment para $numServidores servidores..."
     Scale-Deployment $numServidores
@@ -77,19 +77,19 @@ foreach ($numServidores in $servidoresList) {
     try {
         foreach ($numClientes in $clientesList) {
             foreach ($numMensagens in $mensagensList) {
+                $cenarioId = $c  # Agora passa só o número
                 for ($rep = 1; $rep -le $repeticoes; $rep++) {
                     Write-Host "[EXE] $execucaoAtual/$totalExecucoes"
                     Write-Host "Servidores: $numServidores, Clientes: $numClientes, Mensagens: $numMensagens, Repeticao: $rep"
                     $jobs = @()
                     for ($i = 1; $i -le $numClientes; $i++) {
-                        # Passa $rep explicitamente como argumento para o cliente
-                        $args = @($serverHost, $serverPort, $numMensagens, $numClientes, $i, $numServidores, $execucaoAtual, $rep)
+                        $args = @($serverHost, $serverPort, $numMensagens, $numClientes, $i, $numServidores, $cenarioId, $rep)
                         $jobs += Start-Process -FilePath $clientExe -ArgumentList $args -NoNewWindow -PassThru -WorkingDirectory $projectRoot
                     }
-                    # Aguarda todos os clientes terminarem
                     $jobs | ForEach-Object { $_.WaitForExit() }
                     $execucaoAtual++
                 }
+                $c++
             }
         }
     } finally {
