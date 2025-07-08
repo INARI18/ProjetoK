@@ -1,6 +1,8 @@
+# ProjetoK
+
 ## Descrição
 
-ProjetoK é um ambiente de testes de desempenho para servidores TCP implementados em Go e Python, com clientes também nessas respectivas linguagens. O objetivo é comparar o desempenho dos servidores sob diferentes cargas, utilizando automação de testes, análise estatística e geração de relatórios.
+ProjetoK é um ambiente de testes de desempenho para servidores TCP implementados em Go e Python, com clientes também nessas linguagens. O objetivo é comparar o desempenho dos servidores sob diferentes cargas, utilizando automação de testes, análise estatística e geração de relatórios.
 
 ## Estrutura do Projeto
 
@@ -42,12 +44,23 @@ ProjetoK é um ambiente de testes de desempenho para servidores TCP implementado
    - Rodar testes de carga com clientes Go e Python
    - Gerar arquivos CSV de resultados em `src/results/reports/`
    - Analisar os resultados e gerar relatórios estatísticos
+   - Gerar gráficos comparativos automaticamente em `src/results/charts/`
 
 4. **(Opcional) Rodar análise manual:**
    ```powershell
    python src/tools/analyze_results.py src/results/reports/test-go.csv go
    python src/tools/analyze_results.py src/results/reports/test-python.csv python
    ```
+   ```powershell
+   python src/tools/generate_charts.py
+   ```
+   Os gráficos serão salvos em `src/results/charts/`.
+
+## Sobre os gráficos e métricas
+
+- Os gráficos radar e tabelas comparativas são gerados automaticamente após os testes.
+- As métricas analisadas incluem: Escalabilidade, Eficiência Relativa, Consistência (DPR), Tempo de Resposta por Mensagem, Speedup e Overhead.
+- A explicação detalhada de cada métrica e suas unidades está disponível em `src/results/charts/README.md`.
 
 ## Como rodar manualmente um cliente
 
