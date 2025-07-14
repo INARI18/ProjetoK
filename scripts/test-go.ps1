@@ -82,9 +82,17 @@ foreach ($numServidores in $servidoresList) {
                     Write-Host "[EXE] $execucaoAtual/$totalExecucoes"
                     Write-Host "Servidores: $numServidores, Clientes: $numClientes, Mensagens: $numMensagens, Repeticao: $rep"
                     $jobs = @()
+                    $logPath = Join-Path $resultsDir 'test-go-errors.log'
                     for ($i = 1; $i -le $numClientes; $i++) {
                         $args = @($serverHost, $serverPort, $numMensagens, $numClientes, $i, $numServidores, $cenarioId, $rep)
-                        $jobs += Start-Process -FilePath $clientExe -ArgumentList $args -NoNewWindow -PassThru -WorkingDirectory $projectRoot
+                        try {
+                            $proc = Start-Process -FilePath $clientExe -ArgumentList $args -NoNewWindow -PassThru -WorkingDirectory $projectRoot -ErrorAction Stop
+                            $jobs += $proc
+                        } catch {
+                            $msg = "[ERRO] Falha ao iniciar cliente_id=$i | servidores=$numServidores | clientes=$numClientes | mensagens=$numMensagens | repeticao=$rep | erro=$($_.Exception.Message)"
+                            Write-Host $msg -ForegroundColor Red
+                            Add-Content -Path $logPath -Value $msg
+                        }
                     }
                     $jobs | ForEach-Object { $_.WaitForExit() }
                     $execucaoAtual++

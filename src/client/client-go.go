@@ -1,6 +1,8 @@
+
 package main
 
 import (
+   "runtime"
 	"bufio"
 	"encoding/csv"
 	"fmt"
@@ -59,7 +61,9 @@ func ensureCSVHeaderWithLock(csvPath string, header []string) error {
 }
 
 func main() {
-	// Garante que o diretório existe
+   // Garante uso de todos os núcleos disponíveis
+   runtime.GOMAXPROCS(runtime.NumCPU())
+   // Garante que o diretório existe
 	os.MkdirAll("src/results/reports", 0755)
 
 	// Parâmetros: endereço, porta, quantidade de mensagens
@@ -86,72 +90,91 @@ func main() {
 	if len(os.Args) > 5 {
 		clienteIdx, _ = strconv.Atoi(os.Args[5])
 	}
-	if len(os.Args) > 6 {
-		numServidores, _ = strconv.Atoi(os.Args[6])
-	}
-	if len(os.Args) > 7 {
-		rodadaID = os.Args[7]
-		if n, err := strconv.Atoi(rodadaID); err == nil {
-			rodadaID = fmt.Sprintf("R%d", n)
-		}
-	}
-	if len(os.Args) > 8 {
-		repeticao, _ = strconv.Atoi(os.Args[8])
-	}
+   if len(os.Args) > 6 {
+	   numServidores, _ = strconv.Atoi(os.Args[6])
+   }
+   if len(os.Args) > 7 {
+	   rodadaID = os.Args[7]
+	   if n, err := strconv.Atoi(rodadaID); err == nil {
+		   rodadaID = fmt.Sprintf("R%d", n)
+	   }
+   }
+   if len(os.Args) > 8 {
+	   repeticao, _ = strconv.Atoi(os.Args[8])
+   }
 
-	csvPath := "src/results/reports/test-go.csv"
+   csvPath := "src/results/reports/test-go.csv"
 
-	err := ensureCSVHeaderWithLock(csvPath, []string{"rodada_id", "repeticao", "cliente_id", "num_clientes", "num_servidores", "num_mensagens", "tempo_inicio", "tempo_fim", "tempo_total_ms", "status", "erro"})
-	if err != nil && err.Error() != "erro ao obter lock do CSV para cabeçalho: <nil>" {
-		fmt.Println("Erro ao garantir cabeçalho do CSV:", err)
-	}
+   // Captura qualquer panic e registra no CSV
+   defer func() {
+	   if r := recover(); r != nil {
+		   _ = writeCSVWithLock(csvPath, []string{
+			   rodadaID,
+			   strconv.Itoa(repeticao),
+			   strconv.Itoa(clienteIdx),
+			   strconv.Itoa(numClientes),
+			   strconv.Itoa(numServidores),
+			   strconv.Itoa(numMsgs),
+			   time.Now().Format(time.RFC3339Nano),
+			   time.Now().Format(time.RFC3339Nano),
+			   "0",
+			   "panic",
+			   fmt.Sprintf("%v", r),
+		   })
+	   }
+   }()
 
-	addr := fmt.Sprintf("%s:%d", serverHost, serverPort)
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		_ = writeCSVWithLock(csvPath, []string{rodadaID, strconv.Itoa(repeticao), strconv.Itoa(clienteIdx), strconv.Itoa(numClientes), strconv.Itoa(numServidores), strconv.Itoa(numMsgs), "", "", "", "erro_conexao", err.Error()})
-		return
-	}
-	defer conn.Close()
-	reader := bufio.NewReader(conn)
+   err := ensureCSVHeaderWithLock(csvPath, []string{"rodada_id", "repeticao", "cliente_id", "num_clientes", "num_servidores", "num_mensagens", "tempo_inicio", "tempo_fim", "tempo_total_ms", "status", "erro"})
+   if err != nil && err.Error() != "erro ao obter lock do CSV para cabeçalho: <nil>" {
+	   fmt.Println("Erro ao garantir cabeçalho do CSV:", err)
+   }
 
-	t0Cliente := time.Now()
-	statusGeral := "sucesso"
-	erroGeral := ""
+   addr := fmt.Sprintf("%s:%d", serverHost, serverPort)
+   conn, err := net.Dial("tcp", addr)
+   if err != nil {
+	   _ = writeCSVWithLock(csvPath, []string{rodadaID, strconv.Itoa(repeticao), strconv.Itoa(clienteIdx), strconv.Itoa(numClientes), strconv.Itoa(numServidores), strconv.Itoa(numMsgs), "", "", "", "erro_conexao", err.Error()})
+	   return
+   }
+   defer conn.Close()
+   reader := bufio.NewReader(conn)
 
-	for i := 1; i <= numMsgs; i++ {
-		_, err := conn.Write([]byte("ping\n"))
-		if err != nil {
-			statusGeral = "erro_envio"
-			erroGeral = err.Error()
-			break
-		}
-		resp, err := reader.ReadString('\n')
-		if err != nil {
-			statusGeral = "erro_resposta"
-			erroGeral = err.Error()
-			break
-		}
-		resp = resp[:len(resp)-1] // remove '\n'
-		if resp != "pong" {
-			statusGeral = "falha"
-			erroGeral = resp
-			break
-		}
-	}
-	t1Cliente := time.Now()
-	tempoTotal := t1Cliente.Sub(t0Cliente).Seconds() * 1000 // ms
-	_ = writeCSVWithLock(csvPath, []string{
-		rodadaID,
-		strconv.Itoa(repeticao),
-		strconv.Itoa(clienteIdx),
-		strconv.Itoa(numClientes),
-		strconv.Itoa(numServidores),
-		strconv.Itoa(numMsgs),
-		t0Cliente.Format(time.RFC3339Nano),
-		t1Cliente.Format(time.RFC3339Nano),
-		fmt.Sprintf("%.2f", tempoTotal),
-		statusGeral,
-		erroGeral,
-	})
+   t0Cliente := time.Now()
+   statusGeral := "sucesso"
+   erroGeral := ""
+
+   for i := 1; i <= numMsgs; i++ {
+	   _, err := conn.Write([]byte("ping\n"))
+	   if err != nil {
+		   statusGeral = "erro_envio"
+		   erroGeral = err.Error()
+		   break
+	   }
+	   resp, err := reader.ReadString('\n')
+	   if err != nil {
+		   statusGeral = "erro_resposta"
+		   erroGeral = err.Error()
+		   break
+	   }
+	   resp = resp[:len(resp)-1] // remove '\n'
+	   if resp != "pong" {
+		   statusGeral = "falha"
+		   erroGeral = resp
+		   break
+	   }
+   }
+   t1Cliente := time.Now()
+   tempoTotal := t1Cliente.Sub(t0Cliente).Seconds() * 1000 // ms
+   _ = writeCSVWithLock(csvPath, []string{
+	   rodadaID,
+	   strconv.Itoa(repeticao),
+	   strconv.Itoa(clienteIdx),
+	   strconv.Itoa(numClientes),
+	   strconv.Itoa(numServidores),
+	   strconv.Itoa(numMsgs),
+	   t0Cliente.Format(time.RFC3339Nano),
+	   t1Cliente.Format(time.RFC3339Nano),
+	   fmt.Sprintf("%.2f", tempoTotal),
+	   statusGeral,
+	   erroGeral,
+   })
 }

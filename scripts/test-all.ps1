@@ -107,7 +107,7 @@ $csvGo = Join-Path $projectRoot 'src\results\reports\test-go.csv'
 $csvPython = Join-Path $projectRoot 'src\results\reports\test-python.csv'
 
 # Analisa resultados Go
-if (Test-Path $analyzeScript -and Test-Path $csvGo) {
+if ((Test-Path $analyzeScript) -and (Test-Path $csvGo)) {
     Write-Host "[INFO] Analisando resultados do Go..." -ForegroundColor Yellow
     python $analyzeScript $csvGo go
 } else {
@@ -115,14 +115,45 @@ if (Test-Path $analyzeScript -and Test-Path $csvGo) {
 }
 
 # Analisa resultados Python
-if (Test-Path $analyzeScript -and Test-Path $csvPython) {
+if ((Test-Path $analyzeScript) -and (Test-Path $csvPython)) {
     Write-Host "[INFO] Analisando resultados do Python..." -ForegroundColor Yellow
     python $analyzeScript $csvPython python
 } else {
     Write-Host "[WARN] Nao foi possivel encontrar o script de analise ou o CSV do Python." -ForegroundColor DarkYellow
 }
 
+
+# Cálculo do tempo total de execução dos testes Go e Python
+function Get-Tempo-Total {
+    param($csvPath)
+    if (Test-Path $csvPath) {
+        $df = Import-Csv $csvPath
+        if ($df.Count -eq 0) { return $null }
+        $tempos = $df | Where-Object { $_.tempo_inicio -and $_.tempo_fim } |
+            Select-Object -Property tempo_inicio, tempo_fim
+        if ($tempos.Count -eq 0) { return $null }
+        $inicio = ($tempos | Sort-Object tempo_inicio | Select-Object -First 1).tempo_inicio
+        $fim = ($tempos | Sort-Object tempo_fim -Descending | Select-Object -First 1).tempo_fim
+        try {
+            $dtInicio = [datetime]::Parse($inicio)
+            $dtFim = [datetime]::Parse($fim)
+            $duracao = $dtFim - $dtInicio
+            return $duracao
+        } catch { return $null }
+    }
+    return $null
+}
+
+$tempoGo = Get-Tempo-Total $csvGo
+$tempoPy = Get-Tempo-Total $csvPython
+
 Write-Host "[OK] Teste de carga finalizado! Veja os resultados em 'results/reports'." -ForegroundColor Green
+if ($tempoGo) {
+    Write-Host ("Tempo Total Go:   {0}" -f $tempoGo) -ForegroundColor Cyan
+}
+if ($tempoPy) {
+    Write-Host ("Tempo Total Python: {0}" -f $tempoPy) -ForegroundColor Cyan
+}
 
 # Geração dos gráficos comparativos
 $generateChartsScript = Join-Path $toolsPath 'generate_charts.py'
@@ -133,3 +164,7 @@ if (Test-Path $generateChartsScript) {
 } else {
     Write-Host "[WARN] Script de geração de gráficos não encontrado em $generateChartsScript" -ForegroundColor DarkYellow
 }
+
+# Aguarda o usuário pressionar uma tecla antes de fechar o terminal
+Write-Host "\nPressione qualquer tecla para sair..." -ForegroundColor Yellow
+[void][System.Console]::ReadKey($true)

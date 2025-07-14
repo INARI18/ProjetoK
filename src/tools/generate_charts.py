@@ -69,5 +69,3 @@ for lang, path in files.items():
         print(f"[AVISO] Relatório não encontrado para {lang}: {path}")
 
 plot_3d_surface_interactive_compare(data, charts_dir)
-
-
