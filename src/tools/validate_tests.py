@@ -25,16 +25,20 @@ def validate_file(path):
     # Agrupa execuções reais por cenário
     real_counts = df.groupby(['num_servidores', 'num_clientes', 'num_mensagens', 'repeticao'])['cliente_id'].nunique()
     faltando = []
+    total_faltando = 0
     for key, nclientes_esperado in expected.items():
         nservidores, nclientes, nmsg, rep = key
         nclientes_real = real_counts.get((nservidores, nclientes, nmsg, rep), 0)
         if nclientes_real < nclientes_esperado:
             faltando.append(f"Faltando clientes em servidores={nservidores}, clientes={nclientes}, mensagens={nmsg}, repetição={rep}: {nclientes_real}/{nclientes_esperado}")
-    percent = ((total_expected - len(faltando)) / total_expected) * 100 if total_expected > 0 else 0
+            total_faltando += (nclientes_esperado - nclientes_real)
+    percent_exec = (total_exec / total_expected) * 100 if total_expected > 0 else 0
+    percent_cenarios = ((len(expected) - len(faltando)) / len(expected)) * 100 if len(expected) > 0 else 0
     print(f"Arquivo: {os.path.basename(path)}")
     print(f"Execuções registradas: {total_exec}")
     print(f"Execuções esperadas: {total_expected}")
-    print(f"Cobertura de cenários completos: {percent:.2f}%\n")
+    print(f"Cobertura de execuções: {percent_exec:.2f}%")
+    print(f"Cobertura de cenários completos: {percent_cenarios:.2f}%\n")
     if faltando:
         for msg in faltando[:10]:
             print(msg)

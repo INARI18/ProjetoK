@@ -16,32 +16,41 @@ df = pd.read_csv(csv_path)
 # Considera apenas sucessos
 df = df[df['status'] == 'sucesso'].copy()
 
-
-
-# Remove outliers usando z-score no tempo_total_ms (z <= 2), mas garante que pelo menos 3 execuções de cada cenário não sejam marcadas como outlier
+# Remove outliers usando IQR no tempo_total_ms, mas garante que pelo menos 3 execuções de cada cenário não sejam marcadas como outlier
 
 if not df.empty:
     df['is_outlier'] = False
     group_cols = ['num_clientes', 'num_servidores', 'num_mensagens']
     cenarios_limite = []
-    def marcar_outliers_grupo(subdf):
-        z_scores = np.abs((subdf['tempo_total_ms'] - subdf['tempo_total_ms'].mean()) / subdf['tempo_total_ms'].std(ddof=0))
-        outlier_mask = z_scores > 2
+    def marcar_outliers_grupo_iqr(subdf):
+        q1 = subdf['tempo_total_ms'].quantile(0.25)
+        q3 = subdf['tempo_total_ms'].quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.0 * iqr
+        upper_bound = q3 + 1.0 * iqr
+        outlier_mask = (subdf['tempo_total_ms'] < lower_bound) | (subdf['tempo_total_ms'] > upper_bound)
         if outlier_mask.sum() > 0:
-            idx_ordenado = (z_scores).sort_values().index
-            idx_keep = idx_ordenado[:3]
-            # Se todas as execuções seriam outlier, registra o cenário
+            # Ordena pelo quanto cada ponto está fora do intervalo permitido (quanto maior a distância, mais outlier)
+            dist = np.minimum(np.abs(subdf['tempo_total_ms'] - lower_bound), np.abs(subdf['tempo_total_ms'] - upper_bound))
+            idx_ordenado = dist.sort_values(ascending=False).index
+            idx_keep = (~outlier_mask).to_numpy().nonzero()[0]
+            # Garante pelo menos 3 execuções não outlier
             if outlier_mask.sum() >= (len(subdf) - 3):
                 cenarios_limite.append(tuple(subdf.iloc[0][col] for col in group_cols))
-            outlier_mask.loc[idx_keep] = False
+                # Mantém as 3 execuções mais próximas do centro (menor distância dos limites)
+                idx_nao_outlier = (~outlier_mask).to_numpy().nonzero()[0]
+                if len(idx_nao_outlier) < 3:
+                    # Se menos de 3 não-outliers, pega os menos extremos
+                    idx_keep = dist.sort_values().index[:3]
+                else:
+                    idx_keep = subdf[~outlier_mask].index[:3]
+                outlier_mask.loc[idx_keep] = False
         return outlier_mask
-    # Para evitar DeprecationWarning, removemos as colunas de agrupamento antes do apply
     def marcar_outliers_grupo_sem_grupos(subdf):
-        # subdf já contém apenas as linhas do grupo, mas pode conter as colunas de agrupamento
-        return marcar_outliers_grupo(subdf.drop(columns=group_cols))
+        return marcar_outliers_grupo_iqr(subdf.drop(columns=group_cols))
     df['is_outlier'] = df.groupby(group_cols, group_keys=False).apply(marcar_outliers_grupo_sem_grupos)
     if cenarios_limite:
-        print("[INFO] Cenários que precisaram da limitação de manter 3 execuções (todas seriam outlier pelo z-score):")
+        print("[INFO] Cenários que precisaram da limitação de manter 3 execuções (todas seriam outlier pelo IQR):")
         for c in cenarios_limite:
             print(f"  num_clientes={c[0]}, num_servidores={c[1]}, num_mensagens={c[2]}")
 else:

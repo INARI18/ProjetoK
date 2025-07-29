@@ -19,28 +19,29 @@ import (
 )
 
 func handleConnection(conn net.Conn, wg *sync.WaitGroup, csvWriter *csv.Writer, logFile *os.File, clientID int) {
-	defer wg.Done()
-	defer conn.Close()
-	reader := bufio.NewReader(conn)
-	for {
-		msg, err := reader.ReadString('\n')
-		if err != nil {
-			logFile.WriteString(fmt.Sprintf("%s,ERRO_LEITURA,%v\n", time.Now().Format(time.RFC3339), err))
-			return
-		}
-		msg = msg[:len(msg)-1] // remove '\n'
-		if msg == "ping" {
-			_, err := conn.Write([]byte("pong\n"))
-			if err != nil {
-				logFile.WriteString(fmt.Sprintf("%s,ERRO_RESPOSTA,%v\n", time.Now().Format(time.RFC3339), err))
-				return
-			}
-			csvWriter.Write([]string{time.Now().Format(time.RFC3339), fmt.Sprint(clientID), "ping", "pong", "sucesso"})
-			csvWriter.Flush()
-		} else {
-			logFile.WriteString(fmt.Sprintf("%s,MENSAGEM_INVALIDA,%s\n", time.Now().Format(time.RFC3339), msg))
-		}
-	}
+   defer wg.Done()
+   defer conn.Close()
+   reader := bufio.NewReader(conn)
+   for {
+	   msg, err := reader.ReadString('\n')
+	   if err != nil {
+		   logFile.WriteString(fmt.Sprintf("%s,ERRO_LEITURA,%v\n", time.Now().Format(time.RFC3339), err))
+		   return
+	   }
+	   msg = msg[:len(msg)-1] // remove '\n'
+	   if msg == "ping" {
+		   // Responde imediatamente, mantendo ordem
+		   _, err := conn.Write([]byte("pong\n"))
+		   if err != nil {
+			   logFile.WriteString(fmt.Sprintf("%s,ERRO_RESPOSTA,%v\n", time.Now().Format(time.RFC3339), err))
+			   return
+		   }
+		   csvWriter.Write([]string{time.Now().Format(time.RFC3339), fmt.Sprint(clientID), "ping", "pong", "sucesso"})
+		   csvWriter.Flush()
+	   } else {
+		   logFile.WriteString(fmt.Sprintf("%s,MENSAGEM_INVALIDA,%s\n", time.Now().Format(time.RFC3339), msg))
+	   }
+   }
 }
 
 func main() {

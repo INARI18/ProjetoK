@@ -1,0 +1,15 @@
+# Dockerfile para o client-python
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instala dependências
+COPY src/client/client-python.py .
+COPY src/client/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Cria diretórios de resultados (se necessário)
+RUN mkdir -p /app/src/results/reports
+
+ENTRYPOINT ["python", "client-python.py"]

@@ -1,8 +1,13 @@
 # Dockerfile para servidor Python
 FROM python:3.11-slim
 WORKDIR /app
+# Copia o requirements.txt se existir
+COPY requirements.txt ./
 COPY src/server/server-python.py .
 COPY src/results /app/results
-RUN pip install --no-cache-dir --upgrade pip
+# Atualiza pip e instala dependências se houver requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
 EXPOSE 9000
-CMD ["python", "server-python.py"]
+# Usa python3 explicitamente
+CMD ["python3", "server-python.py"]

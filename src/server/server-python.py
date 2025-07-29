@@ -12,18 +12,22 @@ import logging
 
 def handle_client(conn, addr, csv_writer, csv_lock, log):
     with conn:
+        buffer = b""
         while True:
             try:
                 data = conn.recv(1024)
                 if not data:
                     break
-                msg = data.decode().strip()
-                if msg == "ping":
-                    conn.sendall(b"pong\n")
-                    with csv_lock:
-                        csv_writer.writerow([threading.current_thread().name, addr[0], "ping", "pong", "sucesso"])
-                else:
-                    log.error(f"Mensagem inválida de {addr}: {msg}")
+                buffer += data
+                while b"\n" in buffer:
+                    line, buffer = buffer.split(b"\n", 1)
+                    msg = line.decode().strip()
+                    if msg == "ping":
+                        conn.sendall(b"pong\n")
+                        with csv_lock:
+                            csv_writer.writerow([threading.current_thread().name, addr[0], "ping", "pong", "sucesso"])
+                    else:
+                        log.error(f"Mensagem inválida de {addr}: {msg}")
             except Exception as e:
                 log.error(f"Erro na conexão com {addr}: {e}")
                 break
