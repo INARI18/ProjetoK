@@ -56,9 +56,10 @@ ProjetoK é um ambiente de testes de desempenho para servidores TCP implementado
 
 ## Sobre os gráficos e métricas
 
-- Os gráficos radar e tabelas comparativas são gerados automaticamente após os testes.
-- As métricas analisadas incluem: Escalabilidade, Eficiência Relativa, Consistência (DPR), Tempo de Resposta por Mensagem, Speedup e Overhead.
-- A explicação detalhada de cada métrica e suas unidades está disponível em `src/results/charts/README.md`.
+- Os gráficos gerados são 3D, com cada eixo representando throughput, número de clientes e número de servidores.
+- Cada gráfico mostra Go e Python juntos, facilitando a comparação direta.
+- Cada gráfico corresponde a um cenário de teste com uma quantidade fixa de mensagens por cliente (1, 10, 100, 500, 1000, 10000).
+- Os arquivos dos gráficos são salvos em src/results/charts/.
 
 ## Como rodar manualmente um cliente
 
